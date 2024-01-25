@@ -1,6 +1,10 @@
 import torch
 from torch import nn, Tensor
-from zeta.nn import MultiheadAttention, FeedForward, MultiQueryAttention
+from zeta.nn import (
+    MultiheadAttention,
+    FeedForward,
+    MultiQueryAttention,
+)
 from einops import rearrange, reduce
 
 
@@ -27,6 +31,7 @@ def threed_to_text(
     x = nn.Linear(s, max_seq_len)(x)
     x = rearrange(x, "b d s -> b s d")
     return x
+
 
 class EEGConvEmbeddings(nn.Module):
     def __init__(
@@ -276,7 +281,7 @@ class MorpheusDecoder(nn.Module):
         self.proj = nn.Linear(dim, num_channels)
 
         self.softmax = nn.Softmax(1)
-        
+
         self.encoder = MorpheusEncoder(
             dim,
             heads,
@@ -298,54 +303,31 @@ class MorpheusDecoder(nn.Module):
         # # MRI data is represented as a 4D tensor: [batch_size, channels, depth, height, width].
         # # EEG data is represented as a 3D tensor: [batch_size, channels, time_samples].
         x = self.frmi_embedding(frmi)
-        
+
         # Rearrange to text dimension
         x = reduce(x, "b c d h w -> b (h w) (c d)", "sum")
-        
+
         # Rearrange tensor to be compatible with attn
         x = threed_to_text(x, self.num_channels, self.dim)
-        
+
         # Masked Attention
         x, _, _ = self.masked_attn(x)
-        
+
         # EEG Encoder
         eeg = self.encoder(eeg)
-        
+
         # Multihead Attention
         x = self.mha(x, eeg, x) + x
-        
+
         # Feed Forward
         x = self.ffn(x) + x
-        
+
         # Projection to original dimension
         x = self.proj(x)
-        
+
         # Softmax
         x = self.softmax(x)
-        
+
         # Scatter to 5d tensor
-        
+
         return x
-    
-    
-model = MorpheusDecoder(
-    dim=128,
-    heads=4,
-    depth=2,
-    dim_head=32,
-    dropout=0.1,
-    num_channels=32,
-    conv_channels=32,
-    kernel_size=3,
-    in_channels=1,
-    out_channels=32,
-    stride=1,
-    padding=1,
-    ff_mult=4,
-)
-
-frmi = torch.randn(1, 1, 32, 32, 32)
-eeg = torch.randn(1, 32, 128)
-
-output = model(frmi, eeg)
-print(output.shape)
