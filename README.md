@@ -13,7 +13,7 @@ Implementation of "MORPHEUS-1" from Prophetic AI and "The world’s first multi-
 You can install the package using pip
 
 ```bash
-pip install -e .
+pip install morpheus-torch
 ```
 
 # Usage
