@@ -59,8 +59,6 @@ print(output.shape)
 
 ### Code Quality 🧹
 
-We providehandy commands inside the `Makefile`, namely:
-
 - `make style` to format the code
 - `make check_code_quality` to check code quality (PEP8 basically)
 - `black .`

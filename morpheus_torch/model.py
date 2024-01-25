@@ -1,4 +1,3 @@
-import torch
 from torch import nn, Tensor
 from zeta.nn import (
     MultiheadAttention,
@@ -217,7 +216,7 @@ class MorpheusEncoder(nn.Module):
 
         """
         x = self.eeg_embedding(x)
-        print(x.shape)
+        # print(x.shape)
 
         x = self.mha(x, x, x) + x
 
@@ -329,5 +328,138 @@ class MorpheusDecoder(nn.Module):
         x = self.softmax(x)
 
         # Scatter to 5d tensor
+
+        return x
+
+
+class Morpheus(nn.Module):
+    """
+    Morpheus model implementation.
+
+    Args:
+        dim (int): Dimension of the model.
+        heads (int): Number of attention heads.
+        depth (int): Number of layers in the model.
+        dim_head (int): Dimension of each attention head.
+        dropout (int): Dropout rate.
+        num_channels: Number of input channels.
+        conv_channels: Number of channels in the convolutional layers.
+        kernel_size: Size of the convolutional kernel.
+        in_channels: Number of input channels for the convolutional layers.
+        out_channels: Number of output channels for the convolutional layers.
+        stride (int, optional): Stride value for the convolutional layers. Defaults to 1.
+        padding (int, optional): Padding value for the convolutional layers. Defaults to 0.
+        ff_mult (int, optional): Multiplier for the feed-forward layer dimension. Defaults to 4.
+
+    Attributes:
+        dim (int): Dimension of the model.
+        heads (int): Number of attention heads.
+        depth (int): Number of layers in the model.
+        dim_head (int): Dimension of each attention head.
+        dropout (int): Dropout rate.
+        num_channels: Number of input channels.
+        conv_channels: Number of channels in the convolutional layers.
+        kernel_size: Size of the convolutional kernel.
+        stride (int): Stride value for the convolutional layers.
+        padding (int): Padding value for the convolutional layers.
+        ff_mult (int): Multiplier for the feed-forward layer dimension.
+        layers (nn.ModuleList): List of MorpheusDecoder layers.
+        norm (nn.LayerNorm): Layer normalization module.
+        
+    Examples:
+        >>> model = Morpheus(
+        ...     dim=128,
+        ...     heads=4,
+        ...     depth=2,
+        ...     dim_head=32,
+        ...     dropout=0.1,
+        ...     num_channels=32,
+        ...     conv_channels=32,
+        ...     kernel_size=3,
+        ...     in_channels=1,
+        ...     out_channels=32,
+        ...     stride=1,
+        ...     padding=1,
+        ...     ff_mult=4,
+        ... )
+        >>> frmi = torch.randn(1, 1, 32, 32, 32)
+        >>> eeg = torch.randn(1, 32, 128)
+        >>> output = model(frmi, eeg)
+        >>> print(output.shape)
+
+
+    """
+
+    def __init__(
+        self,
+        dim: int,
+        heads: int,
+        depth: int,
+        dim_head: int,
+        dropout: int,
+        num_channels,
+        conv_channels,
+        kernel_size,
+        in_channels,
+        out_channels,
+        stride=1,
+        padding=0,
+        ff_mult: int = 4,
+        *args,
+        **kwargs,
+    ):
+        super(Morpheus, self).__init__()
+        self.dim = dim
+        self.heads = heads
+        self.depth = depth
+        self.dim_head = dim_head
+        self.dropout = dropout
+        self.num_channels = num_channels
+        self.conv_channels = conv_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.ff_mult = ff_mult
+
+        self.layers = nn.ModuleList([])
+
+        for _ in range(depth):
+            self.layers.append(
+                MorpheusDecoder(
+                    dim,
+                    heads,
+                    depth,
+                    dim_head,
+                    dropout,
+                    num_channels,
+                    conv_channels,
+                    kernel_size,
+                    in_channels,
+                    out_channels,
+                    stride,
+                    padding,
+                    ff_mult,
+                    *args,
+                    **kwargs,
+                )
+            )
+
+        self.norm = nn.LayerNorm(num_channels)
+
+    def forward(self, frmi: Tensor, eeg: Tensor) -> Tensor:
+        """
+        Forward pass of the Morpheus model.
+
+        Args:
+            frmi (Tensor): Input tensor for the frmi modality.
+            eeg (Tensor): Input tensor for the eeg modality.
+
+        Returns:
+            Tensor: Output tensor of the model.
+
+        """
+        for layer in self.layers:
+            x = layer(frmi, eeg)
+            x = self.norm(x)
 
         return x

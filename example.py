@@ -1,8 +1,8 @@
 import torch
 
-from morpheus_torch import MorpheusDecoder
+from morpheus_torch.model import Morpheus
 
-model = MorpheusDecoder(
+model = Morpheus(
     dim=128,
     heads=4,
     depth=2,
