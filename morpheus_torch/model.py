@@ -3,6 +3,7 @@ from torch import nn, Tensor
 from zeta.nn import MultiheadAttention, FeedForward
 from einpos import rearrange, reduce
 
+
 class EEGConvEmbeddings(nn.Module):
     def __init__(
         self,
@@ -66,7 +67,7 @@ class FMRIEmbedding(nn.Module):
         - kernel_size (int): Size of the convolutional kernels.
         - stride (int): Stride of the convolutions.
         - padding (int): Padding added to the input.
-        
+
         Example:
         model = fMRIEmbeddingNet()
         x = torch.randn(1, 1, 32, 32, 32)
@@ -96,7 +97,6 @@ class FMRIEmbedding(nn.Module):
         x = self.conv1(x)
         # Additional operations can be added here as needed
         return x
-    
 
 
 class MorpheusEncoder(nn.Module):
@@ -244,13 +244,9 @@ class MorpheusDecoder(nn.Module):
             dropout,
             subln=True,
         )
-        
+
         self.frmni_embedding = FMRIEmbedding(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride,
-            padding
+            in_channels, out_channels, kernel_size, stride, padding
         )
 
         self.ffn = FeedForward(dim, dim, ff_mult, *args, **kwargs)
@@ -258,10 +254,9 @@ class MorpheusDecoder(nn.Module):
         self.proj = nn.Linear(dim, num_channels)
 
         self.softmax = nn.Softmax(1)
-        
+
     def forward(self, frmi: Tensor) -> Tensor:
         x = self.frmi_embedding(frmi)
-        
 
 
 class MorpheusTransformer(nn.Module):
