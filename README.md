@@ -1,7 +1,9 @@
 [![Multi-Modality](agorabanner.png)](https://discord.gg/qUtxnK2NMf)
 
 # Morpheus 1
+![Morphesus transformer](morpheus.jpeg)
 Implementation of "MORPHEUS-1" from Prophetic AI and "The world’s first multi-modal generative ultrasonic transformer designed to induce and stabilize lucid dreams. "
+
 
 
 
@@ -16,7 +18,6 @@ pip install -e .
 
 # Usage
 ```python
-print("hello world")
 
 ```
 
