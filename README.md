@@ -1,7 +1,9 @@
 [![Multi-Modality](agorabanner.png)](https://discord.gg/qUtxnK2NMf)
 
 # Morpheus 1
+
 ![Morphesus transformer](morpheus.jpeg)
+
 Implementation of "MORPHEUS-1" from Prophetic AI and "The world’s first multi-modal generative ultrasonic transformer designed to induce and stabilize lucid dreams. "
 
 
@@ -66,3 +68,13 @@ We providehandy commands inside the `Makefile`, namely:
 
 # License
 MIT
+
+# Todo
+- [ ] Implement the scatter in the end of the decoder to output spatial outputs
+
+- [ ] Implement a full model with the depth of the decoder layers
+
+- [ ] Change all the MHAs to Multi Query Attentions
+
+- [ ] Double check popular brain scan EEG and FRMI AI papers to double check tensor shape
+
