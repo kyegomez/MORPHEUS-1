@@ -1,8 +1,32 @@
 import torch
 from torch import nn, Tensor
-from zeta.nn import MultiheadAttention, FeedForward
-from einpos import rearrange, reduce
+from zeta.nn import MultiheadAttention, FeedForward, MultiQueryAttention
+from einops import rearrange, reduce
 
+
+def threed_to_text(
+    x: Tensor, max_seq_len: int, dim: int, flatten: bool = False
+):
+    """
+    Converts a 3D tensor to text representation.
+
+    Args:
+        x (Tensor): The input tensor of shape (batch_size, sequence_length, input_dim).
+        max_seq_len (int): The maximum sequence length of the output tensor.
+        dim (int): The dimension of the intermediate tensor.
+        flatten (bool, optional): Whether to flatten the intermediate tensor. Defaults to False.
+
+    Returns:
+        Tensor: The output tensor of shape (batch_size, max_seq_len, input_dim).
+    """
+    b, s, d = x.shape
+
+    x = nn.Linear(d, dim)(x)
+
+    x = rearrange(x, "b s d -> b d s")
+    x = nn.Linear(s, max_seq_len)(x)
+    x = rearrange(x, "b d s -> b s d")
+    return x
 
 class EEGConvEmbeddings(nn.Module):
     def __init__(
@@ -231,11 +255,9 @@ class MorpheusDecoder(nn.Module):
 
         self.frmi_embedding = nn.Linear(num_channels, dim)
 
-        self.masked_attn = MultiheadAttention(
+        self.masked_attn = MultiQueryAttention(
             dim,
             heads,
-            dropout,
-            subln=True,
         )
 
         self.mha = MultiheadAttention(
@@ -254,14 +276,76 @@ class MorpheusDecoder(nn.Module):
         self.proj = nn.Linear(dim, num_channels)
 
         self.softmax = nn.Softmax(1)
+        
+        self.encoder = MorpheusEncoder(
+            dim,
+            heads,
+            depth,
+            dim_head,
+            dropout,
+            num_channels,
+            conv_channels,
+            kernel_size,
+            stride,
+            padding,
+            ff_mult,
+            *args,
+            **kwargs,
+        )
 
-    def forward(self, frmi: Tensor) -> Tensor:
+    def forward(self, frmi: Tensor, eeg: Tensor) -> Tensor:
+        # X = FRMI of shapef
+        # # MRI data is represented as a 4D tensor: [batch_size, channels, depth, height, width].
+        # # EEG data is represented as a 3D tensor: [batch_size, channels, time_samples].
         x = self.frmi_embedding(frmi)
+        
+        # Rearrange to text dimension
+        x = reduce(x, "b c d h w -> b (h w) (c d)", "sum")
+        
+        # Rearrange tensor to be compatible with attn
+        x = threed_to_text(x, self.num_channels, self.dim)
+        
+        # Masked Attention
+        x, _, _ = self.masked_attn(x)
+        
+        # EEG Encoder
+        eeg = self.encoder(eeg)
+        
+        # Multihead Attention
+        x = self.mha(x, eeg, x) + x
+        
+        # Feed Forward
+        x = self.ffn(x) + x
+        
+        # Projection to original dimension
+        x = self.proj(x)
+        
+        # Softmax
+        x = self.softmax(x)
+        
+        # Scatter to 5d tensor
+        
+        return x
+    
+    
+model = MorpheusDecoder(
+    dim=128,
+    heads=4,
+    depth=2,
+    dim_head=32,
+    dropout=0.1,
+    num_channels=32,
+    conv_channels=32,
+    kernel_size=3,
+    in_channels=1,
+    out_channels=32,
+    stride=1,
+    padding=1,
+    ff_mult=4,
+)
 
+frmi = torch.randn(1, 1, 32, 32, 32)
+eeg = torch.randn(1, 32, 128)
 
-class MorpheusTransformer(nn.Module):
-    def __init__(self):
-        pass
-
-    def forward(self, x: Tensor):
-        pass
+output = model(frmi, eeg)
+print(output.shape)
