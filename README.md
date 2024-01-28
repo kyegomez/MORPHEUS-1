@@ -73,9 +73,9 @@ print(output.shape)
 MIT
 
 # Todo
-- [ ] Implement the scatter in the end of the decoder to output spatial outputs
+- [ ] Implement the scatter in the end of the decoder to output spatial outputs which are 4d?
 
-- [ ] Implement a full model with the depth of the decoder layers
+- [x] Implement a full model with the depth of the decoder layers
 
 - [ ] Change all the MHAs to Multi Query Attentions
 

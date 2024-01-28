@@ -32,6 +32,27 @@ def threed_to_text(
     return x
 
 
+
+def scatter3d_to_4d_spatial(x: Tensor, dim: int):
+    """
+    Scatters a 3D tensor into a 4D spatial tensor using einops.
+
+    Args:
+        x (Tensor): The input tensor of shape (b, s, d), where b is the batch size, s is the spatial dimension, and d is the feature dimension.
+        dim (int): The dimension along which to scatter the tensor.
+
+    Returns:
+        Tensor: The scattered 4D spatial tensor of shape (b, (s*s1), d), where s1 is the new spatial dimension after scattering.
+    """
+    b, s, d = x.shape
+    
+    # Scatter the 3D tensor into a 4D spatial tensor
+    x = rearrange(x, "b s d -> b (s s1) d")
+    
+    return x
+
+
+
 class EEGConvEmbeddings(nn.Module):
     def __init__(
         self,
@@ -226,6 +247,47 @@ class MorpheusEncoder(nn.Module):
 
 
 class MorpheusDecoder(nn.Module):
+    """
+    MorpheusDecoder is a module that performs decoding in the Morpheus model.
+
+    Args:
+        dim (int): The dimension of the input and output tensors.
+        heads (int): The number of attention heads.
+        depth (int): The number of layers in the decoder.
+        dim_head (int): The dimension of each attention head.
+        dropout (int): The dropout rate.
+        num_channels: The number of channels in the input tensor.
+        conv_channels: The number of channels in the convolutional layers.
+        kernel_size: The size of the convolutional kernel.
+        in_channels: The number of input channels for the FMRI embedding.
+        out_channels: The number of output channels for the FMRI embedding.
+        stride (int, optional): The stride of the convolutional layers. Defaults to 1.
+        padding (int, optional): The padding size for the convolutional layers. Defaults to 0.
+        ff_mult (int, optional): The multiplier for the feed-forward network dimension. Defaults to 4.
+
+    Attributes:
+        dim (int): The dimension of the input and output tensors.
+        heads (int): The number of attention heads.
+        depth (int): The number of layers in the decoder.
+        dim_head (int): The dimension of each attention head.
+        dropout (int): The dropout rate.
+        num_channels: The number of channels in the input tensor.
+        conv_channels: The number of channels in the convolutional layers.
+        kernel_size: The size of the convolutional kernel.
+        stride (int): The stride of the convolutional layers.
+        padding (int): The padding size for the convolutional layers.
+        ff_mult (int): The multiplier for the feed-forward network dimension.
+        frmi_embedding (nn.Linear): The linear layer for FRMI embedding.
+        masked_attn (MultiQueryAttention): The masked attention module.
+        mha (MultiheadAttention): The multihead attention module.
+        frmni_embedding (FMRIEmbedding): The FMRI embedding module.
+        ffn (FeedForward): The feed-forward network module.
+        proj (nn.Linear): The linear layer for projection to original dimension.
+        softmax (nn.Softmax): The softmax activation function.
+        encoder (MorpheusEncoder): The MorpheusEncoder module.
+
+    """
+
     def __init__(
         self,
         dim: int,
@@ -298,6 +360,17 @@ class MorpheusDecoder(nn.Module):
         )
 
     def forward(self, frmi: Tensor, eeg: Tensor) -> Tensor:
+        """
+        Perform forward pass through the MorpheusDecoder.
+
+        Args:
+            frmi (Tensor): The FRMI input tensor.
+            eeg (Tensor): The EEG input tensor.
+
+        Returns:
+            Tensor: The output tensor after decoding.
+
+        """
         # X = FRMI of shapef
         # # MRI data is represented as a 4D tensor: [batch_size, channels, depth, height, width].
         # # EEG data is represented as a 3D tensor: [batch_size, channels, time_samples].
@@ -365,7 +438,7 @@ class Morpheus(nn.Module):
         ff_mult (int): Multiplier for the feed-forward layer dimension.
         layers (nn.ModuleList): List of MorpheusDecoder layers.
         norm (nn.LayerNorm): Layer normalization module.
-        
+
     Examples:
         >>> model = Morpheus(
         ...     dim=128,

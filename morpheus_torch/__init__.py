@@ -3,6 +3,7 @@ from morpheus_torch.model import (
     FMRIEmbedding,
     MorpheusEncoder,
     MorpheusDecoder,
+    Morpheus,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "FMRIEmbedding",
     "MorpheusEncoder",
     "MorpheusDecoder",
+    "Morpheus"
 ]
