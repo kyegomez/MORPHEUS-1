@@ -19,6 +19,7 @@ model = Morpheus(
     stride=1,  # Stride for convolutional layers
     padding=1,  # Padding for convolutional layers
     ff_mult=4,  # Multiplier for feed-forward layer dimension
+    scatter = False, # Whether to scatter to 4d representing spatial dimensions
 )
 
 # Creating random tensors for input data

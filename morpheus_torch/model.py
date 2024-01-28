@@ -400,8 +400,6 @@ class MorpheusDecoder(nn.Module):
         # Softmax
         x = self.softmax(x)
 
-        # Scatter to 5d tensor
-
         return x
 
 
@@ -478,6 +476,7 @@ class Morpheus(nn.Module):
         stride=1,
         padding=0,
         ff_mult: int = 4,
+        scatter: bool = False,
         *args,
         **kwargs,
     ):
@@ -493,6 +492,7 @@ class Morpheus(nn.Module):
         self.stride = stride
         self.padding = padding
         self.ff_mult = ff_mult
+        self.scatter = scatter
 
         self.layers = nn.ModuleList([])
 
@@ -534,5 +534,10 @@ class Morpheus(nn.Module):
         for layer in self.layers:
             x = layer(frmi, eeg)
             x = self.norm(x)
-
+        
+        if self.scatter:
+            # Scatter the tensor to 4d spatial tensor
+            s1 = x.shape[1]
+            x = rearrange(x, "b (s s1) d -> b s s1 d", s1=s1)
+    
         return x
