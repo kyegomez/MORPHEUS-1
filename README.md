@@ -74,7 +74,7 @@ print(output.shape)
 MIT
 
 # Todo
-- [ ] Implement the scatter in the end of the decoder to output spatial outputs which are 4d?
+- [x] Implement the scatter in the end of the decoder to output spatial outputs which are 4d?
 
 - [x] Implement a full model with the depth of the decoder layers
 
